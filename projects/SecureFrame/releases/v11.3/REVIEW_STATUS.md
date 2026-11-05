@@ -1,9 +1,9 @@
-# SecureFrame V11.3 — source review status
+# SecureFrame V11.3 — partial source review
 
-Status: **HISTORICAL SOURCE WITHHELD** (content-level confidentiality review not complete).
+Status: **GENERIC SUBSET PUBLISHED; ORIGINAL HISTORICAL RELEASE WITHHELD**.
 
-No original source documents, diagrams, databases, JSON evidence, customer-specific technical details, or historical release snapshots are included in this version directory.
+The published Python module and synthetic test contain only generic functionality, without customer documents, technical diagrams, signal names, formulas, internal paths, or source-derived test data.
 
-The original V11.3 package remains local pending individual review of Python, shell, test fixtures, documentation, hard-coded identifiers and generated content. The review must inspect contents, not only extensions.
+The original V11.3 scripts and data remain withheld pending detailed content-level review. The generic subset is not the complete historical release and has not been validated as a drop-in replacement.
 
-Do not claim this version is deployed or that its full source has been published.
+No approval or source verification is inferred from a successful import.
