@@ -1,0 +1,19 @@
+{
+  "schema": "secureframe.source_archive_index.v1",
+  "versions": [
+    "11.2",
+    "11.3",
+    "11.4",
+    "11.5",
+    "11.5.1",
+    "11.5.2",
+    "11.5.3",
+    "11.5.4",
+    "11.6.0",
+    "11.6.1",
+    "11.6.2"
+  ],
+  "historical_sources_uploaded": false,
+  "status": "REQUIRES_CONTENT_SECURITY_REVIEW",
+  "published_scope": "generic_benchmark_only"
+}
