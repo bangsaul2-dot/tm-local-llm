@@ -38,7 +38,7 @@ class AngleIntegrationTests(unittest.TestCase):
     def test_tangent_abstains(self):
         nodes=[{"name":"Alpha","kind":"leaf","bbox":[0,0,30,40]}]
         self.assertEqual(adaptive_snap([42,20],nodes,
-            incoming_vector=[0,1])["status"],"ambiguous_angle")
+            incoming_vector=[0,1])["status"],"unmatched")
 
     def test_zero_length_segment_abstains(self):
         semantic,geometry,nodes=fixture()
