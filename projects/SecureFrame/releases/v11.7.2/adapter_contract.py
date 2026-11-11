@@ -54,41 +54,54 @@ def normalize_wire(wire):
 
 def adaptive_snap(point, nodes, *, scale=1.0, base_tolerance=8.0,
                   max_tolerance=16.0, min_gap=2.0, incoming_vector=None):
-    """Snap to nearest leaf boundary; abstain on competing leaf or tangent."""
+    """Axis-first boundary snap; never infer a connection from mere proximity.
+
+    Horizontal wire -> x-facing side, vertical wire -> y-facing side.
+    The orthogonal coordinate may miss the side span by at most tolerance,
+    but must be independently checked against competing leaves.
+    """
     if not _point(point) or not math.isfinite(scale) or scale <= 0:
         raise ValueError("invalid point or scale")
     tolerance = min(max_tolerance, max(base_tolerance, 12.0 * scale))
+    if incoming_vector is not None:
+        if not _point(incoming_vector):
+            raise ValueError("invalid incoming vector")
+        vx, vy = incoming_vector
+        if math.hypot(vx, vy) < 1e-9:
+            return {"name": None, "status": "ambiguous_angle", "tolerance": tolerance}
+        axis = "horizontal" if abs(vx) >= abs(vy) else "vertical"
+    else:
+        axis = None
     candidates = []
     for node in nodes:
         b = node.get("bbox")
         if node.get("kind") != "leaf" or not _bbox(b):
             continue
         x, y = point
-        dx = max(b[0] - x, 0, x - b[2])
-        dy = max(b[1] - y, 0, y - b[3])
-        distance = math.hypot(dx, dy) if dx or dy else min(x-b[0], b[2]-x, y-b[1], b[3]-y)
-        if distance <= tolerance:
-            candidates.append((distance, str(node["name"]), b))
-    candidates.sort(key=lambda t: (t[0], t[1]))
+        if axis == "horizontal":
+            # Select a vertical face by x distance, never by corner tie order.
+            distance = min(abs(x-b[0]), abs(x-b[2]))
+            cross = max(b[1]-y, 0, y-b[3])
+        elif axis == "vertical":
+            distance = min(abs(y-b[1]), abs(y-b[3]))
+            cross = max(b[0]-x, 0, x-b[2])
+        else:
+            dx = max(b[0]-x, 0, x-b[2])
+            dy = max(b[1]-y, 0, y-b[3])
+            distance = math.hypot(dx, dy) if dx or dy else min(
+                x-b[0], b[2]-x, y-b[1], b[3]-y)
+            cross = 0.0
+        if distance <= tolerance and cross <= tolerance:
+            candidates.append((distance, cross, str(node["name"])))
+    candidates.sort(key=lambda item: (item[0], item[1], item[2]))
     if not candidates:
         return {"name": None, "status": "unmatched", "tolerance": tolerance}
-    if len(candidates) > 1 and candidates[1][0] - candidates[0][0] < min_gap * scale:
+    if len(candidates) > 1 and (
+            candidates[1][0] - candidates[0][0] < min_gap * scale):
         return {"name": None, "status": "ambiguous_endpoint", "tolerance": tolerance}
-    distance, name, b = candidates[0]
-    if incoming_vector is not None:
-        if not _point(incoming_vector):
-            raise ValueError("invalid incoming vector")
-        vx, vy = incoming_vector
-        norm = math.hypot(vx, vy)
-        if norm < 1e-9:
-            return {"name": None, "status": "ambiguous_angle", "tolerance": tolerance}
-        x, y = point
-        side = min(((abs(x-b[0]), "vertical"), (abs(x-b[2]), "vertical"),
-                    (abs(y-b[1]), "horizontal"), (abs(y-b[3]), "horizontal")))[1]
-        normal_component = abs(vx)/norm if side == "vertical" else abs(vy)/norm
-        if normal_component < 0.5:
-            return {"name": None, "status": "ambiguous_angle", "tolerance": tolerance}
-    return {"name": name, "status": "matched", "tolerance": tolerance, "distance": distance}
+    distance, cross, name = candidates[0]
+    return {"name": name, "status": "matched", "tolerance": tolerance,
+            "distance": distance, "cross_axis_offset": cross, "axis": axis}
 
 def normalize_geometry(geometry):
     if not isinstance(geometry, dict):
