@@ -48,3 +48,33 @@ The standalone synthetic suite has 16 tests. It was executed before publication 
 7. No source_verified promotion without human approval.
 
 **Known limitation:** tolerance uses an image scale parameter, not fully inferred port geometry. Segment tracing and OCR/Ollama transport are not included. A matched logical edge remains an unapproved proposal, not a verified engineering connection.
+
+## Angle contract patch (2026-11-11)
+
+This branch adds the measured endpoint approach vectors to `fuse_grounded`:
+
+- Start endpoint: `points[0] - points[1]` (toward start)
+- End endpoint: `points[-1] - points[-2]` (toward end)
+- `adaptive_snap(..., incoming_vector=...)` is invoked for both endpoints.
+- `ambiguous_angle` prevents that physical wire from being used to establish a candidate. If no matching wires remain, the logical edge is ambiguous. **Unmatched wires are not silently promoted.**
+
+**Canonical V11.6 adapter input:** `wires:[{id, points, arrow_direction, trace_verified, bus_group_id, arrowhead_tip, arrowhead_base}]`. `bus_id` is accepted as an alias and normalized to `bus_group_id`; conflicting aliases are rejected. `points` must be an ordered end-to-end path in image pixel coordinates, not model-generated coordinates. `arrow_direction` is relative to point order. `trace_verified` is provided only after local independent wire tracing. `arrowhead_tip/base` are optional measured pixel coordinates; when available they cross-check the declared direction.
+
+**Grounding pipeline example (local-only):**
+
+```python
+# Add both local release directories to PYTHONPATH, or import via importlib.
+from hybrid_bus import validate_semantic, ground_nodes
+from hybrid_fusion import fuse_grounded
+semantic = validate_semantic(local_qwen_semantic_json)
+# local_opencv_geometry: boxes, OCR tokens, traced wires from local V11.6 adapter.
+grounded_nodes = ground_nodes(semantic, local_opencv_geometry)
+result = fuse_grounded(semantic, local_opencv_geometry, grounded_nodes, scale=1.0)
+# All result edges remain unapproved proposals; do not upload the result JSON.
+```
+
+`ground_nodes` is supplied by V11.7.1; V11.7.2 does not invoke Tesseract or Ollama. The above is an API example, not an executable demo without the local input variables and Python import path. Do not use Qwen-generated coordinates.
+
+**Tolerance boundary:** at scale=1 the current default is 12 px; 11 and 12 px match, 13 px does not. No automatic slack has been added: widening tolerance without independent competitor/angle evidence could create false connections. A separate calibration step is required.
+
+**Validation:** The added tests are synthetic only. Run `python3 -m unittest discover -p 'test_*.py' -v` in the v11.7.2 directory. No actual SFT run or GT pass_90 is claimed. No human GT means `NOT_EVALUABLE`.
