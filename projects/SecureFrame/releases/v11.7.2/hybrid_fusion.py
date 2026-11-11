@@ -12,8 +12,18 @@ def fuse_grounded(semantic, geometry, grounded_nodes, *, scale=1.0):
     geometry = normalize_geometry(geometry)
     wires = []
     for w in geometry["wires"]:
-        a = adaptive_snap(w["points"][0], grounded_nodes, scale=scale)
-        b = adaptive_snap(w["points"][-1], grounded_nodes, scale=scale)
+        # At the first endpoint, the incoming vector points back from the
+        # second point toward the first; at the last, it points from the
+        # penultimate point toward the last. Neither vector is LLM-derived.
+        points = w["points"]
+        start_vector = [points[0][0] - points[1][0],
+                        points[0][1] - points[1][1]]
+        end_vector = [points[-1][0] - points[-2][0],
+                      points[-1][1] - points[-2][1]]
+        a = adaptive_snap(points[0], grounded_nodes, scale=scale,
+                          incoming_vector=start_vector)
+        b = adaptive_snap(points[-1], grounded_nodes, scale=scale,
+                          incoming_vector=end_vector)
         wires.append({**w, "a": a["name"], "b": b["name"],
                       "a_status": a["status"], "b_status": b["status"]})
     edges = []
@@ -32,7 +42,12 @@ def fuse_grounded(semantic, geometry, grounded_nodes, *, scale=1.0):
         matches = sorted((w for w in wires if w["trace_verified"] and
                           w["a"] is not None and w["b"] is not None and
                           {w["a"], w["b"]} == {src, dst}), key=lambda w:w["id"])
-        if not matches: reasons.append("wire_missing")
+        if not matches:
+            reasons.append("wire_missing")
+            # Angle failures must remain visible, not silently disappear.
+            if any(w["a_status"] == "ambiguous_angle" or
+                   w["b_status"] == "ambiguous_angle" for w in wires):
+                reasons.append("endpoint_angle_unverified")
         bus_ids = sorted({w["bus_group_id"] for w in matches if w["bus_group_id"] is not None})
         if len(bus_ids) > 1: reasons.append("multiple_bus_groups_require_review")
         if any(w["direction_conflict"] for w in matches): reasons.append("arrow_geometry_conflict")
