@@ -27,3 +27,11 @@ Previous angle-contract patch: 5/21 failures and 1/4 real parallel wires matched
 6. Without independent human GT, report pass_90 as NOT_EVALUABLE.
 
 **This GitHub branch is a proposed fix, NOT a successful release.** Internal SFT results and code are not requested or uploaded.
+
+## 2026-11-12 conditional gate amendment (requested by local validator)
+
+The stale `test_adapter_contract.test_tangent_abstains` expectation has been changed from `ambiguous_angle` to `unmatched`. Both are abstention outcomes, but the new axis-first behavior specifically returns `unmatched` for this test. **This is a test expectation correction, not a geometry algorithm fix.**
+
+The project elected a **logical bus grounding** acceptance criterion instead of physical 4/4: one logical candidate grounded by at least one geometrically consistent, independently traced physical wire; all excluded wires must remain explicitly unverified/ambiguous. In the private local report, 3/4 wires were consistent and one was excluded due to upstream geometry. **Physical 4/4 remains FAILED and must be reported separately.** No claim of recovered wire 0127 or 4/4 physical match is permitted.
+
+**RC remains BLOCKED until OpenCode reruns all 27 synthetic tests, the private bus grounding check, repeatability and non-destructive security checks on the exact new commit.** Human GT absent => pass_90 NOT_EVALUABLE. If gate passes, only the redefined *logical bus grounding* gate is eligible for promotion; not physical 4/4.
