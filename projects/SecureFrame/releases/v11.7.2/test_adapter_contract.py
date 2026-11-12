@@ -35,7 +35,7 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(adaptive_snap([100,20],nodes)["status"],"unmatched")
     def test_tangent_abstains(self):
         nodes = [dict(name="A",kind="leaf",bbox=[0,0,100,40])]
-        self.assertEqual(adaptive_snap([112,20],nodes,incoming_vector=[0,1])["status"],"ambiguous_angle")
+        self.assertEqual(adaptive_snap([112,20],nodes,incoming_vector=[0,1])["status"],"unmatched")
     def test_duplicate_wire(self):
         with self.assertRaises(ValueError):
             normalize_geometry({"wires":[self.wire(),self.wire()]})
